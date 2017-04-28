@@ -9,7 +9,7 @@ from matplotlib.ticker import Formatter, FixedLocator
 from matplotlib import rcParams
 
 
-ppthres = 4600 #lowest pp to be plotted on graph
+ppthres = 3748 #lowest pp to be plotted on graph
 rcParams['axes.axisbelow'] = False
 rcParams['axes.formatter.useoffset']=False
 list = []
@@ -223,9 +223,15 @@ for i in csvList:
     rawData = f.read()
     f.close()
     list = rawData.split('\n')
+    if(len(list)<=10001):
+        print(date, 'not enough players!')
+        continue
     list = list[1:10001]
-    plot_100_avg_ppvspc(date)
-    plot_accpp(date)
-    plot_pcrank(date)
-    plot_pprank(date)
+    try:
+        plot_100_avg_ppvspc(date)
+        plot_accpp(date)
+        plot_pcrank(date)
+        plot_pprank(date)
+    except:
+        print(date)
 
