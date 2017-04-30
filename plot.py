@@ -91,7 +91,16 @@ class ACCScale(mscale.ScaleBase):
 # that ``matplotlib`` can find it.
 mscale.register_scale(ACCScale)
 
-
+def render_nodata_message():
+    plt.text(0.5, 0.5,'no data',
+    horizontalalignment='center',
+    verticalalignment='center',
+    transform = ax.transAxes,
+    color='red', 
+    size = 12,
+    bbox={'facecolor':'red', 'alpha':0.5, 'pad':10}        
+    )
+        
 def plot_100_avg_ppvspc(date,cl):
     plt.clf()
     plt.title(date)
@@ -137,6 +146,8 @@ def plot_100_avg_ppvspc(date,cl):
     #ax.set_xticks(np.append(np.arange(1000,10000,1000) , np.arange(10000,100000,10000)))
     #ax.set_yticklabels([1000*i for i in range(4,10)])
     #ax.set_xticklabels([1000]+3*['']+[5000]+4*['']+[10000]+3*['']+[50000])
+    if(cl=='red'):
+        render_nodata_message()
     ax.set_ylim([ppthres,14000])
     ax.set_xlim([1000,300000])
     plt.savefig('pp-pc/'+date+'.png')
@@ -156,15 +167,18 @@ def plot_accpp(date,cl):
     plt.scatter(x,y,s=len(x)*[1.5],alpha=0.3,color=cl)
     ax = plt.gca()
     #ax.set_yticks([0,10,100,1000,10000])
-    plt.xscale('log')
+    plt.xscale('linear')
     plt.yscale('log')
     plt.grid(which='major', color='b', linestyle='-',linewidth=0.5)
     plt.grid(which='minor', color='r', linestyle='-',linewidth=0.25)
     ax.xaxis.set_minor_formatter(ticker.FormatStrFormatter('%d'))
     ax.xaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))
-    ax.set_xticks(np.arange(91,100))
+    ax.set_xticks(np.arange(95,100))
     ax.set_ylim([ppthres,14000])
-    ax.set_xlim([90,100])
+    ax.set_xlim([95,100])
+    if(cl=='red'):
+        render_nodata_message()
+    #ax.text((95+100)/2, (ppthres+14000)/2, 'no data', alpha = 0.5, color = 'red', size = 15, bbox={'facecolor':'red', 'alpha':0.5, 'pad':10})
     ax.set_axisbelow(True)
     plt.savefig('acc-pp/'+date+'.png')
 
@@ -191,6 +205,8 @@ def plot_pcrank(date,cl):
     ax.set_ylim([1,10000])
     ax.set_xlim([1000,300000])
     ax.set_axisbelow(True)
+    if(cl=='red'):
+        render_nodata_message()
     plt.gca().invert_yaxis()
     #plt.show()
     plt.savefig('rank-pc/'+date+'.png')
@@ -218,6 +234,8 @@ def plot_pprank(date,cl):
     ax.set_ylim([ppthres,14000])
     ax.set_xlim([1,10000])
     ax.set_axisbelow(True)
+    if(cl=='red'):
+        render_nodata_message()
     #plt.show()
     plt.savefig('pp-rank/'+date+'.png')
     
@@ -242,6 +260,6 @@ for i in csvList:
         plot_accpp(date,c)
         plot_pcrank(date,c)
         plot_pprank(date,c)
-    except:
+    except valueError:
         print(date,'error!')
 
