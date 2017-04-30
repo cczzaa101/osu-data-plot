@@ -16,7 +16,10 @@ list = None
 
 import os
 csvList = os.listdir('csv')
-
+folderList = ['acc-pp','pp-pc','pp-rank','rank-pc']
+for i in folderList:
+    if not os.path.exists(i):
+        os.makedirs(i)
     
 class ACCScale(mscale.ScaleBase):
 
