@@ -8,12 +8,17 @@ from matplotlib import ticker
 from matplotlib.ticker import Formatter, FixedLocator
 from matplotlib import rcParams
 
-
 ppthres = 3748 #lowest pp to be plotted on graph
+ppupthres = 0
+width = 1024
+height = 768
+mydpi = 80
+
+plt.figure(figsize=(width/mydpi, height/mydpi),dpi=mydpi)
 rcParams['axes.axisbelow'] = False
 rcParams['axes.formatter.useoffset']=False
 list = None
-
+ax = None
 import os
 csvList = os.listdir('csv')
 folderList = ['acc-pp','pp-pc','pp-rank','rank-pc']
@@ -21,92 +26,35 @@ for i in folderList:
     if not os.path.exists(i):
         os.makedirs(i)
     
-class ACCScale(mscale.ScaleBase):
-
-    # The scale class must have a member ``name`` that defines the
-    # string used to select the scale.  For example,
-    # ``gca().set_yscale("mercator")`` would be used to select this
-    # scale.
-    name = 'acc'
-
-    def __init__(self, axis, **kwargs):
-        mscale.ScaleBase.__init__(self)
-
-    def get_transform(self):
-        return self.accTransform()
-    def set_default_locators_and_formatters(self, axis): 
-        major = [1, 5, 10, 12, 14, 16, 18, 20, 25, 28, 30] #+ [range(31,60)]
-        axis.set_major_locator(ticker.FixedLocator(major))
-
-    class accTransform(mtransforms.Transform):
-        # There are two value members that must be defined.
-        # ``input_dims`` and ``output_dims`` specify number of input
-        # dimensions and output dimensions to the transformation.
-        # These are used by the transformation framework to do some
-        # error checking and prevent incompatible transformations from
-        # being connected together.  When defining transforms for a
-        # scale, which are, by definition, separable and have only one
-        # dimension, these members should always be set to 1.
-        input_dims = 1
-        output_dims = 1
-        is_separable = True
-
-        def __init__(self):
-            mtransforms.Transform.__init__(self)
-
-        def transform_non_affine(self, a):
-            """
-            This transform takes an Nx1 ``numpy`` array and returns a
-            transformed copy.  Since the range of the Mercator scale
-            is limited by the user-specified threshold, the input
-            array must be masked to contain only valid values.
-            ``matplotlib`` will handle masked arrays and remove the
-            out-of-range data from the plot.  Importantly, the
-            ``transform`` method *must* return an array that is the
-            same shape as the input array, since these values need to
-            remain synchronized with values in the other dimension.
-            """
-            return np.power(a,5)
-
-        def inverted(self):
-            """
-            Override this method so matplotlib knows how to get the
-            inverse transform for this transform.
-            """
-            return ACCScale.InvertedACCTRansform(
-                )
-
-    class InvertedACCTRansform(mtransforms.Transform):
-        input_dims = 1
-        output_dims = 1
-        is_separable = True
-
-        def __init__(self):
-            mtransforms.Transform.__init__(self)
-
-        def transform_non_affine(self, a):
-            return np.power(a,1/5)
-
-        def inverted(self):
-            return ACCScale.accTransform()
-
-# Now that the Scale class has been defined, it must be registered so
-# that ``matplotlib`` can find it.
-mscale.register_scale(ACCScale)
 
 def render_nodata_message():
     plt.text(0.5, 0.5,'no data',
     horizontalalignment='center',
     verticalalignment='center',
-    transform = ax.transAxes,
+    transform = plt.gca().transAxes,
     color='red', 
     size = 12,
     bbox={'facecolor':'red', 'alpha':0.5, 'pad':10}        
     )
-        
+  
+def setupcolor(ax):
+    ax.patch.set_facecolor('black')
+    ax.spines['bottom'].set_color('#ffffff')
+    ax.spines['top'].set_color('#ffffff')
+    ax.spines['left'].set_color('#ffffff')
+    ax.spines['right'].set_color('#ffffff')
+    label = plt.ylabel("y-label")
+    ax.tick_params(axis='y', which='both', colors='white')
+    [i.set_color("white") for i in ax.get_xticklabels()]
+    #[i.set_color("white") for i in ax.get_yticklabels()]
+    
+    
 def plot_100_avg_ppvspc(date,cl):
+    l = 19000 #lowest pp to be plotted on graph
+    u = 0
     plt.clf()
-    plt.title(date)
+    
+    plt.title(date,color='white')
     x = []
     y = []
     tempx=0
@@ -117,6 +65,8 @@ def plot_100_avg_ppvspc(date,cl):
         temp = i.split(',')
         tempx+=(int(temp[5]))
         tempy+=(int(temp[7]))
+        u = max(u,int(temp[7]))
+        l = min(l,int(temp[7]))
         num+=1
         if(num==lim):
             x.append(tempx/lim)
@@ -125,6 +75,9 @@ def plot_100_avg_ppvspc(date,cl):
             tempx=0
             tempy=0
     
+    global ppupthres,ppthres
+    ppupthres =u + 1000
+    ppthres = l
     plt.scatter(x,y,s=len(x)*[1.5],alpha=0.3,color = cl)
     '''
     z1 = np.polyfit(x,y,1)
@@ -137,8 +90,8 @@ def plot_100_avg_ppvspc(date,cl):
     '''
     plt.xscale('log')
     plt.yscale('log')
-    plt.grid(which='major', color='b', linestyle='-',linewidth=1.5)
-    plt.grid(which='minor', color='r', linestyle='-')
+    plt.grid(which='major', color='white', linestyle='-',linewidth=1.5)
+    plt.grid(which='minor', color='#eeeeee', linestyle='-')
     ax = plt.gca()
 
     ax.set_axisbelow(True)
@@ -151,14 +104,16 @@ def plot_100_avg_ppvspc(date,cl):
     #ax.set_xticklabels([1000]+3*['']+[5000]+4*['']+[10000]+3*['']+[50000])
     if(cl=='red'):
         render_nodata_message()
-    ax.set_ylim([ppthres,14000])
+    ax.set_ylim([ppthres,ppupthres])
     ax.set_xlim([1000,300000])
-    plt.savefig('pp-pc/'+date+'.png')
+    setupcolor(ax)
+    plt.savefig('pp-pc/'+date+'.png',facecolor='black')
 
     
 def plot_accpp(date,cl):
     plt.clf()
-    plt.title(date)
+    #plt.figure(figsize=(width/mydpi, height/mydpi),dpi=mydpi)
+    plt.title(date,color='white')
     x = []
     y = []
     for i in list:
@@ -172,22 +127,29 @@ def plot_accpp(date,cl):
     #ax.set_yticks([0,10,100,1000,10000])
     plt.xscale('linear')
     plt.yscale('log')
-    plt.grid(which='major', color='b', linestyle='-',linewidth=0.5)
-    plt.grid(which='minor', color='r', linestyle='-',linewidth=0.25)
+    plt.grid(which='major', color='white', linestyle='-',linewidth=0.5)
+    plt.grid(which='minor', color='#eeeeee', linestyle='-',linewidth=0.25)
+    ax.yaxis.set_minor_formatter(ticker.FormatStrFormatter('%d'))
+    ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))
     ax.xaxis.set_minor_formatter(ticker.FormatStrFormatter('%d'))
     ax.xaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))
     ax.set_xticks(np.arange(95,100))
-    ax.set_ylim([ppthres,14000])
+    
+    #ax.set_yticks([4000,5000,6000,7000,8000,9000,10000])
+    #print(ppupthres,ppthres)
+    ax.set_ylim([ppthres,ppupthres])
     ax.set_xlim([95,100])
     if(cl=='red'):
         render_nodata_message()
     #ax.text((95+100)/2, (ppthres+14000)/2, 'no data', alpha = 0.5, color = 'red', size = 15, bbox={'facecolor':'red', 'alpha':0.5, 'pad':10})
     ax.set_axisbelow(True)
-    plt.savefig('acc-pp/'+date+'.png')
+    setupcolor(ax)
+    plt.savefig('acc-pp/'+date+'.png',facecolor='black')
 
 def plot_pcrank(date,cl):
     plt.clf()
-    plt.title(date)
+    #plt.figure(figsize=(width/mydpi, height/mydpi),dpi=mydpi)
+    plt.title(date,color='white')
     x = []
     y = []
     for i in list:
@@ -200,8 +162,8 @@ def plot_pcrank(date,cl):
     #ax.set_yticks([0,10,100,1000,10000])
     plt.xscale('log')
     plt.yscale('log')
-    plt.grid(which='major', color='b', linestyle='-',linewidth=0.5)
-    plt.grid(which='minor', color='r', linestyle='-',linewidth=0.25)
+    plt.grid(which='major', color='white', linestyle='-',linewidth=0.5)
+    plt.grid(which='minor', color='#eeeeee', linestyle='-',linewidth=0.25)
     #ax.xaxis.set_minor_formatter(ticker.FormatStrFormatter('%d'))
     ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))
     ax.xaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))
@@ -212,11 +174,13 @@ def plot_pcrank(date,cl):
         render_nodata_message()
     plt.gca().invert_yaxis()
     #plt.show()
-    plt.savefig('rank-pc/'+date+'.png')
+    setupcolor(ax)
+    plt.savefig('rank-pc/'+date+'.png',facecolor='black')
     
 def plot_pprank(date,cl):
     plt.clf()
-    plt.title(date)
+    #plt.figure(figsize=(width/mydpi, height/mydpi),dpi=mydpi)
+    plt.title(date,color='white')
     x = []
     y = []
     for i in list:
@@ -229,20 +193,32 @@ def plot_pprank(date,cl):
     #ax.set_yticks([0,10,100,1000,10000])
     plt.xscale('log')
     #plt.yscale('log')
-    plt.grid(which='major', color='b', linestyle='-',linewidth=0.5)
-    plt.grid(which='minor', color='r', linestyle='-',linewidth=0.25)
+    plt.grid(which='major', color='white', linestyle='-',linewidth=0.5)
+    plt.grid(which='minor', color='#eeeeee', linestyle='-',linewidth=0.25)
     #ax.xaxis.set_minor_formatter(ticker.FormatStrFormatter('%d'))
     ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))
     ax.xaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))
-    ax.set_ylim([ppthres,14000])
+    ax.set_ylim([ppthres,ppupthres])
     ax.set_xlim([1,10000])
     ax.set_axisbelow(True)
     if(cl=='red'):
         render_nodata_message()
     #plt.show()
-    plt.savefig('pp-rank/'+date+'.png')
+    setupcolor(ax)
+    plt.savefig('pp-rank/'+date+'.png',facecolor='black')
     
+def plot_main(i):
+    if(i==0):
+        plot_100_avg_ppvspc(date,c)
+    if(i==1):
+        plot_accpp(date,c)
+    if(i==2):
+        plot_pcrank(date,c)
+    if(i==3):
+        plot_pprank(date,c)
+        
 for i in csvList:
+    global date,c
     date = i[:8]
     f = open("csv/"+i,"r")
     rawData = f.read()
@@ -256,13 +232,15 @@ for i in csvList:
         print(date, ' complete')
         list = rawData.split('\n')
         list = list[1:10001]
-        c = 'blue'
+        c = 'yellow'
     if(list == None): continue
-    try:
-        plot_100_avg_ppvspc(date,c)
-        plot_accpp(date,c)
-        plot_pcrank(date,c)
-        plot_pprank(date,c)
-    except valueError:
-        print(date,'error!')
+    for i in range(4):
+        plot_main(i)
 
+for i in folderList:
+    tp = os.listdir(i)
+    tp = sorted(tp)
+    count = 0
+    for file in tp:
+        os.rename(i+'/'+file, i+'/'+('000'+str(count))[ len(str(count)):]+'.png')
+        count+=1
