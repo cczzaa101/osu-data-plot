@@ -12,7 +12,7 @@ from matplotlib import rcParams
 ppthres = 3748 #lowest pp to be plotted on graph
 rcParams['axes.axisbelow'] = False
 rcParams['axes.formatter.useoffset']=False
-list = []
+list = None
 
 import os
 csvList = os.listdir('csv')
@@ -92,8 +92,9 @@ class ACCScale(mscale.ScaleBase):
 mscale.register_scale(ACCScale)
 
 
-def plot_100_avg_ppvspc(date):
+def plot_100_avg_ppvspc(date,cl):
     plt.clf()
+    plt.title(date)
     x = []
     y = []
     tempx=0
@@ -112,7 +113,7 @@ def plot_100_avg_ppvspc(date):
             tempx=0
             tempy=0
     
-    plt.scatter(x,y,s=len(x)*[1.5],alpha=0.3)
+    plt.scatter(x,y,s=len(x)*[1.5],alpha=0.3,color = cl)
     '''
     z1 = np.polyfit(x,y,1)
     p1=np.poly1d(z1)
@@ -141,8 +142,9 @@ def plot_100_avg_ppvspc(date):
     plt.savefig('pp-pc/'+date+'.png')
 
     
-def plot_accpp(date):
+def plot_accpp(date,cl):
     plt.clf()
+    plt.title(date)
     x = []
     y = []
     for i in list:
@@ -151,7 +153,7 @@ def plot_accpp(date):
         x.append(float(temp[4].replace('%','')))
         y.append(int(temp[7]))
     
-    plt.scatter(x,y,s=len(x)*[1.5],alpha=0.3)
+    plt.scatter(x,y,s=len(x)*[1.5],alpha=0.3,color=cl)
     ax = plt.gca()
     #ax.set_yticks([0,10,100,1000,10000])
     plt.xscale('log')
@@ -166,8 +168,9 @@ def plot_accpp(date):
     ax.set_axisbelow(True)
     plt.savefig('acc-pp/'+date+'.png')
 
-def plot_pcrank(date):
+def plot_pcrank(date,cl):
     plt.clf()
+    plt.title(date)
     x = []
     y = []
     for i in list:
@@ -175,7 +178,7 @@ def plot_pcrank(date):
         x.append(int(temp[5]))
         y.append(int(temp[0]))
     
-    plt.scatter(x,y,s=len(x)*[1.5],alpha=0.3)
+    plt.scatter(x,y,s=len(x)*[1.5],alpha=0.3,color=cl)
     ax = plt.gca()
     #ax.set_yticks([0,10,100,1000,10000])
     plt.xscale('log')
@@ -192,8 +195,9 @@ def plot_pcrank(date):
     #plt.show()
     plt.savefig('rank-pc/'+date+'.png')
     
-def plot_pprank(date):
+def plot_pprank(date,cl):
     plt.clf()
+    plt.title(date)
     x = []
     y = []
     for i in list:
@@ -201,7 +205,7 @@ def plot_pprank(date):
         x.append(int(temp[0]))
         y.append(int(temp[7]))
     
-    plt.plot(x,y)
+    plt.plot(x,y,color = cl)
     ax = plt.gca()
     #ax.set_yticks([0,10,100,1000,10000])
     plt.xscale('log')
@@ -222,16 +226,22 @@ for i in csvList:
     f = open("csv/"+i,"r")
     rawData = f.read()
     f.close()
-    list = rawData.split('\n')
-    if(len(list)<=10001):
-        print(date, 'not enough players!')
-        continue
-    list = list[1:10001]
+    #list = rawData.split('\n')
+    if(len(rawData.split('\n'))<=10001):
+        print(date, ' not enough players!')
+        c = 'red'
+        #continue
+    else:
+        print(date, ' complete')
+        list = rawData.split('\n')
+        list = list[1:10001]
+        c = 'blue'
+    if(list == None): continue
     try:
-        plot_100_avg_ppvspc(date)
-        plot_accpp(date)
-        plot_pcrank(date)
-        plot_pprank(date)
+        plot_100_avg_ppvspc(date,c)
+        plot_accpp(date,c)
+        plot_pcrank(date,c)
+        plot_pprank(date,c)
     except:
-        print(date)
+        print(date,'error!')
 
